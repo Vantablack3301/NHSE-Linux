@@ -1,37 +1,45 @@
-﻿using System;
-using System.IO;
-using System.Windows.Forms;
-using NHSE.Core;
-using NHSE.Injection;
-using NHSE.Sprites;
-using NHSE.WinForms.Properties;
+using System;
+using Gtk;
 
 namespace NHSE.WinForms
 {
     /// <summary>
     /// Simple launcher for opening a save file.
     /// </summary>
-    public partial class Main : Form
+    public partial class Main : Window
     {
         public const string BackupFolderName = "bak";
         public const string ItemFolderName = "items";
         public static readonly string WorkingDirectory = Application.StartupPath;
-        public static readonly string BackupPath = Path.Combine(WorkingDirectory, BackupFolderName);
-        public static readonly string ItemPath = Path.Combine(WorkingDirectory, ItemFolderName);
+        public static readonly string BackupPath = System.IO.Path.Combine(WorkingDirectory, BackupFolderName);
+        public static readonly string ItemPath = System.IO.Path.Combine(WorkingDirectory, ItemFolderName);
 
-        public Main()
+        private VBox vbox = new VBox(false, 2);
+        private MenuBar menubar = new MenuBar();
+        private MenuItem fileItem = new MenuItem("File");
+        private MenuItem openItem = new MenuItem("Open");
+        private MenuItem exitItem = new MenuItem("Exit");
+
+        public Main() : base("NHSE")
         {
-            InitializeComponent();
+            SetDefaultSize(250, 200);
+            SetPosition(WindowPosition.Center);
+            DeleteEvent += delegate { Application.Quit(); };
 
-            // Flash to front
-            BringToFront();
-            WindowState = FormWindowState.Minimized;
-            Show();
-            WindowState = FormWindowState.Normal;
-
-            var args = Environment.GetCommandLineArgs();
-            for (int i = 1; i < args.Length; i++)
-                Open(args[i]);
+            var fileMenu = new Menu();
+            fileItem.Submenu = fileMenu;
+            
+            openItem.Activated += Open_Click;
+            fileMenu.Append(openItem);
+            
+            exitItem.Activated += delegate { Application.Quit(); };
+            fileMenu.Append(exitItem);
+            
+            menubar.Append(fileItem);
+            vbox.PackStart(menubar, false, false, 0);
+            Add(vbox);
+            
+            ShowAll();
         }
 
         private static void Open(HorizonSave file)
@@ -47,47 +55,20 @@ namespace NHSE.WinForms
             new Editor(file).Show();
         }
 
-        private void Main_DragEnter(object sender, DragEventArgs e)
+        private void Open_Click(object sender, EventArgs e)
         {
-            if (e.AllowedEffect == (DragDropEffects.Copy | DragDropEffects.Link)) // external file
-                e.Effect = DragDropEffects.Copy;
-            else if (e.Data != null) // within
-                e.Effect = DragDropEffects.Move;
-        }
+            using var ofd = new FileChooserDialog(
+                "Choose a file to open",
+                this,
+                FileChooserAction.Open,
+                "Cancel", ResponseType.Cancel,
+                "Open", ResponseType.Accept);
 
-        private void Main_DragDrop(object sender, DragEventArgs e)
-        {
-            var files = (string[]?)e.Data?.GetData(DataFormats.FileDrop);
-            if (files == null || files.Length == 0)
-                return;
-            Open(files[0]);
-            e.Effect = DragDropEffects.Copy;
-        }
-
-        private void Menu_Open(object sender, EventArgs e)
-        {
-            if ((ModifierKeys & Keys.Control) != 0)
+            if (ofd.Run() == (int)ResponseType.Accept)
             {
-                // Detect save file from SD cards?
+                Open(ofd.Filename);
             }
-            else if ((ModifierKeys & Keys.Shift) != 0)
-            {
-                var path = Settings.Default.LastFilePath;
-                if (Directory.Exists(path))
-                {
-                    Open(path);
-                    return;
-                }
-            }
-
-            using var ofd = new OpenFileDialog
-            {
-                Title = "Open main.dat ...",
-                Filter = "New Horizons Save File (main.dat)|main.dat",
-                FileName = "main.dat",
-            };
-            if (ofd.ShowDialog() == DialogResult.OK)
-                Open(ofd.FileName);
+            ofd.Destroy();
         }
 
         private static void Open(string path)
@@ -108,14 +89,14 @@ namespace NHSE.WinForms
 
         private static void OpenFileOrPath(string path)
         {
-            if (Directory.Exists(path))
+            if (System.IO.Directory.Exists(path))
             {
                 OpenSaveFile(path);
                 return;
             }
 
-            var dir = Path.GetDirectoryName(path);
-            if (dir is null || !Directory.Exists(dir)) // ya never know
+            var dir = System.IO.Path.GetDirectoryName(path);
+            if (dir is null || !System.IO.Directory.Exists(dir)) // ya never know
             {
                 WinFormsUtil.Error(MessageStrings.MsgSaveDataImportFail, MessageStrings.MsgSaveDataImportSuggest);
                 return;
@@ -149,53 +130,10 @@ namespace NHSE.WinForms
 
         private static void BackupSaveFile(HorizonSave file, string path, string bak)
         {
-            Directory.CreateDirectory(bak);
-            var dest = Path.Combine(bak, file.GetBackupFolderTitle());
-            if (!Directory.Exists(dest))
+            System.IO.Directory.CreateDirectory(bak);
+            var dest = System.IO.Path.Combine(bak, file.GetBackupFolderTitle());
+            if (!System.IO.Directory.Exists(dest))
                 FileUtil.CopyFolder(path, dest);
-        }
-
-        private void Main_KeyDown(object sender, KeyEventArgs e)
-        {
-            if (ModifierKeys != Keys.Control)
-            {
-#if DEBUG
-                if (ModifierKeys == (Keys.Control | Keys.Alt) && e.KeyCode == Keys.D)
-                    DevUtil.UpdateAll();
-#endif
-                return;
-            }
-
-            switch (e.KeyCode)
-            {
-                case Keys.O:
-                {
-                    Menu_Open(sender, e);
-                    break;
-                }
-                case Keys.I:
-                {
-                    ItemSprite.Initialize(GameInfo.GetStrings("en").itemlist);
-                    var items = new Item[40];
-                    for (int i = 0; i < items.Length; i++)
-                        items[i] = new Item(Item.NONE);
-                    using var editor = new PlayerItemEditor(items, 10, 4, true);
-                    editor.ShowDialog();
-                    break;
-                }
-                case Keys.H:
-                {
-                    using var editor = new SysBotRAMEdit(InjectionType.Generic);
-                    editor.ShowDialog();
-                    break;
-                }
-                case Keys.P:
-                {
-                    using var editor = new SettingsEditor();
-                    editor.ShowDialog();
-                    break;
-                }
-            }
         }
     }
 }

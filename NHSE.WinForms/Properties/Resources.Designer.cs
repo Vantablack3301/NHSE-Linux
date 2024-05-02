@@ -265,7 +265,7 @@ namespace NHSE.WinForms.Properties {
         ///SimpleHexEditor=16进制编辑器
         ///SingleItemEditor=物品编辑器
         ///SingleObjectEditor=属性编辑器
-        ///SysBotRAMEdit=Sys [rest of string was truncated]&quot;;.
+        ///Sys [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string lang_zhs {
             get {
@@ -294,7 +294,7 @@ namespace NHSE.WinForms.Properties {
         ///SimpleHexEditor=16進制編輯器
         ///SingleItemEditor=物品編輯器
         ///SingleObjectEditor=屬性編輯器
-        ///SysBotRAMEdit=SysB [rest of string was truncated]&quot;;.
+        ///SysB [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string lang_zht {
             get {

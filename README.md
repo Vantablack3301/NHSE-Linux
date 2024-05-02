@@ -11,6 +11,14 @@ Save Editor for Animal Crossing: New Horizons
 Edits savedata dumped from the Nintendo Switch. 
 * Bring your own save file data; this program does not dump it from your console.
 
+## Running the Application on Linux
+
+To run NHSE on Linux, ensure you have GTK# installed on your system. You can then use Mono to run the application:
+
+```bash
+mono NHSE.WinForms.exe
+```
+
 ## See Also
 
 [MyHorizons](https://github.com/Cuyler36/MyHorizons) by [Cuyler36](https://github.com/Cuyler36/)

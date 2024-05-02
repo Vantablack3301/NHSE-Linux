@@ -1,5 +1,5 @@
 using System;
-using System.Windows.Forms;
+using Gtk;
 
 namespace NHSE.WinForms
 {
@@ -11,12 +11,13 @@ namespace NHSE.WinForms
         [STAThread]
         private static void Main()
         {
-#if NETCOREAPP
-            Application.SetHighDpiMode(HighDpiMode.SystemAware);
-#endif
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Main());
+            Application.Init();
+            var app = new Application("org.NHSE.WinForms.NHSE", GLib.ApplicationFlags.None);
+            app.Register(GLib.Cancellable.Current);
+            var win = new MainWindow();
+            app.AddWindow(win);
+            win.Show();
+            Application.Run();
         }
     }
 }
