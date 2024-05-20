@@ -131,4 +131,9 @@
     <Folder Include="Resources\network\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Eto.Forms" Version="2.8.3" />
+    <PackageReference Include="GtkSharp" Version="3.22.25.56" />
+  </ItemGroup>
+
 </Project>
