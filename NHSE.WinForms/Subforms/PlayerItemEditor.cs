@@ -1,9 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Windows.Forms;
+using Eto.Forms;
 using NHSE.Core;
 using NHSE.Injection;
 
@@ -23,7 +23,7 @@ namespace NHSE.WinForms
 
             var Editor = ItemGrid = new ItemGridEditor(ItemEditor, array) {Dock = DockStyle.Fill};
             Editor.InitializeGrid(width, height, 64, 64);
-            PAN_Items.Controls.Add(Editor);
+            PAN_Items.Content = Editor;
 
             ItemEditor.Initialize(GameInfo.Strings.ItemDataSource);
             Editor.LoadItems();
@@ -40,18 +40,19 @@ namespace NHSE.WinForms
 
         private void B_Save_Click(object sender, EventArgs e)
         {
-            DialogResult = DialogResult.OK;
+            DialogResult = DialogResult.Ok;
             Close();
         }
 
         private void B_Dump_Click(object sender, EventArgs e)
         {
-            using var sfd = new SaveFileDialog
+            var sfd = new SaveFileDialog
             {
-                Filter = "New Horizons Inventory (*.nhi)|*.nhi|All files (*.*)|*.*",
+                Title = "Save Inventory",
+                Filters = { new FileDialogFilter("New Horizons Inventory", ".nhi"), new FileDialogFilter("All files", ".*") },
                 FileName = "items.nhi",
             };
-            if (sfd.ShowDialog() != DialogResult.OK)
+            if (sfd.ShowDialog(this) != DialogResult.Ok)
                 return;
             var bytes = ItemArray.Write();
             File.WriteAllBytes(sfd.FileName, bytes);
@@ -59,11 +60,11 @@ namespace NHSE.WinForms
 
         private void B_Load_Click(object sender, EventArgs e)
         {
-            bool skipOccupiedSlots = (ModifierKeys & Keys.Alt) != 0;
-            bool importCheatClipboard = (ModifierKeys & Keys.Control) != 0;
-            if (importCheatClipboard && Clipboard.ContainsText())
+            bool skipOccupiedSlots = (Keyboard.Modifiers & Keys.Alt) != 0;
+            bool importCheatClipboard = (Keyboard.Modifiers & Keys.Control) != 0;
+            if (importCheatClipboard && Clipboard.Instance.ContainsText)
             {
-                var text = Clipboard.GetText();
+                var text = Clipboard.Instance.Text;
                 var bytes = ItemCheatCode.ReadCode(text);
                 if (bytes.Length % ItemArray.ItemSize == 0)
                 {
@@ -72,15 +73,16 @@ namespace NHSE.WinForms
                 }
             }
 
-            using var sfd = new OpenFileDialog
+            var ofd = new OpenFileDialog
             {
-                Filter = "New Horizons Inventory (*.nhi)|*.nhi|All files (*.*)|*.*",
+                Title = "Open Inventory",
+                Filters = { new FileDialogFilter("New Horizons Inventory", ".nhi"), new FileDialogFilter("All files", ".*") },
                 FileName = "items.nhi",
             };
-            if (sfd.ShowDialog() != DialogResult.OK)
+            if (ofd.ShowDialog(this) != DialogResult.Ok)
                 return;
 
-            var data = File.ReadAllBytes(sfd.FileName);
+            var data = File.ReadAllBytes(ofd.FileName);
             ImportItemData(data, skipOccupiedSlots);
         }
 
@@ -98,8 +100,8 @@ namespace NHSE.WinForms
             if (exist != null)
             {
                 exist.Show();
-				exist.BringToFront();
-				exist.CenterToForm(this);
+                exist.BringToFront();
+                exist.CenterToForm(this);
                 return;
             }
 
@@ -153,22 +155,61 @@ namespace NHSE.WinForms
             }
             else
             {
-                bool skipOccupiedSlots = (ModifierKeys & Keys.Alt) != 0;
+                bool skipOccupiedSlots = (Keyboard.Modifiers & Keys.Alt) != 0;
                 ImportItemData(data, skipOccupiedSlots);
             }
         }
 
-        public static void EnableDragDrop(Control parent, DragEventHandler enter, DragEventHandler drop)
+        public static void EnableDragDrop(Control parent, EventHandler<DragEventArgs> enter, EventHandler<DragEventArgs> drop)
         {
             parent.AllowDrop = true;
             parent.DragEnter += enter;
             parent.DragDrop += drop;
-            foreach (var control in parent.Controls.OfType<PictureBox>())
+            foreach (var control in parent.Controls.OfType<ImageView>())
             {
                 control.AllowDrop = true;
                 control.DragEnter += enter;
                 control.DragDrop += drop;
             }
         }
+
+        private void InitializeComponent()
+        {
+            B_Cancel = new Button { Text = "Cancel" };
+            B_Save = new Button { Text = "Save" };
+            B_Dump = new Button { Text = "Dump" };
+            B_Load = new Button { Text = "Load" };
+            B_Inject = new Button { Text = "Inject" };
+            ItemEditor = new ItemEditor();
+            PAN_Items = new Panel();
+
+            B_Cancel.Click += B_Cancel_Click;
+            B_Save.Click += B_Save_Click;
+            B_Dump.Click += B_Dump_Click;
+            B_Load.Click += B_Load_Click;
+            B_Inject.Click += B_Inject_Click;
+
+            var buttonLayout = new StackLayout
+            {
+                Orientation = Orientation.Horizontal,
+                Items = { B_Cancel, B_Save, B_Dump, B_Load, B_Inject }
+            };
+
+            var mainLayout = new StackLayout
+            {
+                Orientation = Orientation.Vertical,
+                Items = { ItemEditor, PAN_Items, buttonLayout }
+            };
+
+            Content = mainLayout;
+        }
+
+        private Button B_Cancel;
+        private Button B_Save;
+        private Button B_Dump;
+        private Button B_Load;
+        private Button B_Inject;
+        private ItemEditor ItemEditor;
+        private Panel PAN_Items;
     }
 }

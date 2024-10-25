@@ -1,10 +1,9 @@
-﻿using System;
-using System.Drawing;
-using System.Drawing.Imaging;
+using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Windows.Forms;
+using Eto.Drawing;
+using Eto.Forms;
 using NHSE.Core;
 using NHSE.Injection;
 using NHSE.Sprites;
@@ -33,7 +32,7 @@ namespace NHSE.WinForms
             Menu_Language.SelectedIndex = index; // triggers translation
             // this.TranslateInterface(GameInfo.CurrentLanguage);
 
-            Text = SAV.GetSaveTitle("NHSE");
+            Title = SAV.GetSaveTitle("NHSE");
         }
 
         private void Menu_Settings_Click(object sender, EventArgs e)
@@ -79,10 +78,10 @@ namespace NHSE.WinForms
 
         private void Menu_DumpDecrypted_Click(object sender, EventArgs e)
         {
-            using var fbd = new FolderBrowserDialog();
-            if (fbd.ShowDialog() != DialogResult.OK)
+            using var fbd = new SelectFolderDialog();
+            if (fbd.ShowDialog(this) != DialogResult.Ok)
                 return;
-            SAV.Dump(fbd.SelectedPath);
+            SAV.Dump(fbd.Directory);
             System.Media.SystemSounds.Asterisk.Play();
         }
 
@@ -91,11 +90,11 @@ namespace NHSE.WinForms
             using var ofd = new OpenFileDialog
             {
                 Title = "Open main.dat ...",
-                Filter = "New Horizons Save File (main.dat)|main.dat",
+                Filters = { new FileDialogFilter("New Horizons Save File (main.dat)", "main.dat") },
                 FileName = "main.dat",
             };
 
-            if (ofd.ShowDialog() == DialogResult.OK)
+            if (ofd.ShowDialog(this) == DialogResult.Ok)
                 LoadDecryptedFromPath(ofd.FileName);
         }
 
@@ -126,7 +125,7 @@ namespace NHSE.WinForms
                 return;
 
             var lines = result.Select(z => z.ToString());
-            Clipboard.SetText(string.Join(Environment.NewLine, lines));
+            Clipboard.Text = string.Join(Environment.NewLine, lines);
         }
 
         private void Menu_RAMEdit_Click(object sender, EventArgs e)
@@ -166,8 +165,8 @@ namespace NHSE.WinForms
         {
             var p0 = SAV.Players[0].Personal;
             var villagers = SAV.Main.GetVillagers();
-            var v = new VillagerEditor(villagers, p0, SAV, true) {Dock = DockStyle.Fill};
-            Tab_Villagers.Controls.Add(v);
+            var v = new VillagerEditor(villagers, p0, SAV, true) {Size = new Size(-1, -1)};
+            Tab_Villagers.Content = v;
             return v;
         }
 
@@ -228,8 +227,8 @@ namespace NHSE.WinForms
                 var bag = pers.Bag;
                 var pocket = pers.Pocket;
                 var items = pocket.Concat(bag).ToArray();
-                using var editor = new PlayerItemEditor(items, 10, 4, sysbot: true);
-                if (editor.ShowDialog() != DialogResult.OK)
+                using var editor = new PlayerItemEditor(items, 10, 4, true);
+                if (editor.ShowDialog(this) != DialogResult.Ok)
                     return;
 
                 pers.Pocket = items.Take(pocket.Count).ToArray();
@@ -243,7 +242,7 @@ namespace NHSE.WinForms
             var pers = player.Personal;
             var p1 = pers.ItemChest;
             using var editor = new PlayerItemEditor(p1, 10, 5);
-            if (editor.ShowDialog() == DialogResult.OK)
+            if (editor.ShowDialog(this) == DialogResult.Ok)
                 pers.ItemChest = p1;
         }
 
@@ -251,7 +250,7 @@ namespace NHSE.WinForms
         {
             var items = SAV.Main.RecycleBin;
             using var editor = new PlayerItemEditor(items, 10, 4);
-            if (editor.ShowDialog() == DialogResult.OK)
+            if (editor.ShowDialog(this) == DialogResult.Ok)
                 SAV.Main.RecycleBin = items;
         }
 
@@ -259,28 +258,28 @@ namespace NHSE.WinForms
         {
             var player = SAV.Players[PlayerIndex];
             using var editor = new RecipeListEditor(player);
-            editor.ShowDialog();
+            editor.ShowDialog(this);
         }
 
         private void B_EditPlayerReceivedItems_Click(object sender, EventArgs e)
         {
             var player = SAV.Players[PlayerIndex];
             using var editor = new ItemReceivedEditor(player);
-            editor.ShowDialog();
+            editor.ShowDialog(this);
         }
 
         private void B_EditPlayerReactions_Click(object sender, EventArgs e)
         {
             var player = SAV.Players[PlayerIndex];
             using var editor = new ReactionEditor(player.Personal);
-            editor.ShowDialog();
+            editor.ShowDialog(this);
         }
 
         private void B_EditPlayerMisc_Click(object sender, EventArgs e)
         {
             var player = SAV.Players[PlayerIndex];
             using var editor = new MiscPlayerEditor(player);
-            editor.ShowDialog();
+            editor.ShowDialog(this);
         }
 
         private void LoadPlayer(int index)
@@ -385,7 +384,7 @@ namespace NHSE.WinForms
         {
             var pers = SAV.Players[PlayerIndex].Personal;
             using var editor = new AchievementEditor(pers);
-            editor.ShowDialog();
+            editor.ShowDialog(this);
         }
 
         private void B_EditPlayerFlags_Click(object sender, EventArgs e)
@@ -393,7 +392,7 @@ namespace NHSE.WinForms
             var pers = SAV.Players[PlayerIndex].Personal;
             var flags = pers.GetEventFlagsPlayer();
             using var editor = new FlagEditor(flags);
-            if (editor.ShowDialog() == DialogResult.OK)
+            if (editor.ShowDialog(this) == DialogResult.Ok)
                 pers.SetEventFlagsPlayer(flags);
         }
 
@@ -401,7 +400,7 @@ namespace NHSE.WinForms
 
         private void Menu_SavePNG_Click(object sender, EventArgs e)
         {
-            var pb = WinFormsUtil.GetUnderlyingControl<PictureBox>(sender);
+            var pb = WinFormsUtil.GetUnderlyingControl<ImageView>(sender);
             if (pb?.Image == null)
             {
                 WinFormsUtil.Alert(MessageStrings.MsgNoPictureLoaded);
@@ -412,10 +411,10 @@ namespace NHSE.WinForms
             var bmp = pb.Image;
             using var sfd = new SaveFileDialog
             {
-                Filter = "png file (*.png)|*.png|All files (*.*)|*.*",
+                Filters = { new FileDialogFilter("png file (*.png)", "png") },
                 FileName = $"{name}.png",
             };
-            if (sfd.ShowDialog() != DialogResult.OK)
+            if (sfd.ShowDialog(this) != DialogResult.Ok)
                 return;
 
             bmp.Save(sfd.FileName, ImageFormat.Png);
@@ -425,21 +424,21 @@ namespace NHSE.WinForms
         {
             var turnips = SAV.Main.Turnips;
             using var editor = new SingleObjectEditor<TurnipStonk>(turnips, PropertySort.Categorized, false);
-            if (editor.ShowDialog() == DialogResult.OK)
+            if (editor.ShowDialog(this) == DialogResult.Ok)
                 SAV.Main.Turnips = turnips;
         }
 
         private void B_EditFieldItems_Click(object sender, EventArgs e)
         {
             using var editor = new FieldItemEditor(SAV.Main);
-            editor.ShowDialog();
+            editor.ShowDialog(this);
         }
 
         private void B_EditLandFlags_Click(object sender, EventArgs e)
         {
             var flags = SAV.Main.GetEventFlagLand();
             using var editor = new LandFlagEditor(flags);
-            if (editor.ShowDialog() == DialogResult.OK)
+            if (editor.ShowDialog(this) == DialogResult.Ok)
                 SAV.Main.SetEventFlagLand(flags);
         }
 
@@ -449,7 +448,7 @@ namespace NHSE.WinForms
             var townID = SAV.Players[0].Personal.GetTownIdentity(); // fetch ID for overwrite ownership
             var patterns = SAV.Main.GetDesigns();
             using var editor = new PatternEditor(patterns);
-            if (editor.ShowDialog() == DialogResult.OK)
+            if (editor.ShowDialog(this) == DialogResult.Ok)
                 SAV.Main.SetDesigns(patterns, playerID, townID);
         }
 
@@ -459,7 +458,7 @@ namespace NHSE.WinForms
             var townID = SAV.Players[0].Personal.GetTownIdentity(); // fetch ID for overwrite ownership
             var patterns = SAV.Main.GetDesignsPRO();
             using var editor = new PatternEditorPRO(patterns);
-            if (editor.ShowDialog() == DialogResult.OK)
+            if (editor.ShowDialog(this) == DialogResult.Ok)
                 SAV.Main.SetDesignsPRO(patterns, playerID, townID);
         }
 
@@ -467,7 +466,7 @@ namespace NHSE.WinForms
         {
             var patterns = new[] {SAV.Main.FlagMyDesign};
             using var editor = new PatternEditor(patterns);
-            if (editor.ShowDialog() == DialogResult.OK)
+            if (editor.ShowDialog(this) == DialogResult.Ok)
                 SAV.Main.FlagMyDesign = patterns[0];
         }
 
@@ -475,11 +474,11 @@ namespace NHSE.WinForms
         {
             var patterns = SAV.Main.GetDesignsTailor();
             using var editor = new PatternEditorPRO(patterns);
-            if (editor.ShowDialog() == DialogResult.OK)
+            if (editor.ShowDialog(this) == DialogResult.Ok)
                 SAV.Main.SetDesignsTailor(patterns);
         }
 
-        private static void ShowContextMenuBelow(ToolStripDropDown c, Control n) => c.Show(n.PointToScreen(new Point(0, n.Height)));
+        private static void ShowContextMenuBelow(ContextMenu c, Control n) => c.Show(n.PointToScreen(new Point(0, n.Height)));
         private void B_EditPlayer_Click(object sender, EventArgs e) => ShowContextMenuBelow(CM_EditPlayer, B_EditPlayer);
         private void B_EditMap_Click(object sender, EventArgs e) => ShowContextMenuBelow(CM_EditMap, B_EditMap);
 
@@ -487,7 +486,7 @@ namespace NHSE.WinForms
         {
             var houses = SAV.Main.GetPlayerHouses();
             using var editor = new PlayerHouseEditor(houses, SAV.Players, SAV.Main, PlayerIndex);
-            if (editor.ShowDialog() == DialogResult.OK)
+            if (editor.ShowDialog(this) == DialogResult.Ok)
                 SAV.Main.SetPlayerHouses(houses);
         }
 
@@ -495,7 +494,7 @@ namespace NHSE.WinForms
         {
             var boxed = SAV.Main.Bulletin;
             using var editor = new SingleObjectEditor<object>(boxed, PropertySort.NoSort, false);
-            if (editor.ShowDialog() == DialogResult.OK)
+            if (editor.ShowDialog(this) == DialogResult.Ok)
                 SAV.Main.Bulletin = boxed;
         }
 
@@ -503,7 +502,7 @@ namespace NHSE.WinForms
         {
             var boxed = SAV.Main.SaveFg;
             using var editor = new SingleObjectEditor<object>(boxed, PropertySort.NoSort, false);
-            if (editor.ShowDialog() == DialogResult.OK)
+            if (editor.ShowDialog(this) == DialogResult.Ok)
                 SAV.Main.SaveFg = boxed;
         }
 
@@ -511,7 +510,7 @@ namespace NHSE.WinForms
         {
             var museum = SAV.Main.Museum;
             using var editor = new MuseumEditor(museum);
-            if (editor.ShowDialog() == DialogResult.OK)
+            if (editor.ShowDialog(this) == DialogResult.Ok)
                 SAV.Main.Museum = museum;
         }
 
@@ -519,11 +518,239 @@ namespace NHSE.WinForms
         {
             var boxed = SAV.Main.Visitor;
             using var editor = new SingleObjectEditor<object>(boxed, PropertySort.NoSort, false);
-            if (editor.ShowDialog() == DialogResult.OK)
+            if (editor.ShowDialog(this) == DialogResult.Ok)
                 SAV.Main.Visitor = boxed;
         }
 
-        private void NUD_PocketCount_ValueChanged(object sender, EventArgs e) => ((NumericUpDown) sender).BackColor = (uint) ((NumericUpDown) sender).Value > 20 ? Color.Red : NUD_BankBells.BackColor;
-        private void NUD_Wallet_ValueChanged(object sender, EventArgs e) => NUD_Wallet.BackColor = (ulong) NUD_Wallet.Value > 99_999 ? Color.Red : NUD_BankBells.BackColor;
+        private void NUD_PocketCount_ValueChanged(object sender, EventArgs e) => ((NumericUpDown) sender).BackgroundColor = (uint) ((NumericUpDown) sender).Value > 20 ? Colors.Red : NUD_BankBells.BackgroundColor;
+        private void NUD_Wallet_ValueChanged(object sender, EventArgs e) => NUD_Wallet.BackgroundColor = (ulong) NUD_Wallet.Value > 99_999 ? Colors.Red : NUD_BankBells.BackgroundColor;
+
+        private void InitializeComponent()
+        {
+            Menu_Settings = new ButtonMenuItem { Text = "Settings" };
+            Menu_Settings.Click += Menu_Settings_Click;
+
+            Menu_Language = new DropDown { Width = 100 };
+            Menu_Language.SelectedIndexChanged += Menu_Language_SelectedIndexChanged;
+
+            Menu_Options = new ButtonMenuItem { Text = "Options" };
+            Menu_Options.Items.Add(Menu_Settings);
+            Menu_Options.Items.Add(Menu_Language);
+
+            Menu_Save = new Button { Text = "Save" };
+            Menu_Save.Click += Menu_Save_Click;
+
+            Menu_DumpDecrypted = new Button { Text = "Dump Decrypted" };
+            Menu_DumpDecrypted.Click += Menu_DumpDecrypted_Click;
+
+            Menu_LoadDecrypted = new Button { Text = "Load Decrypted" };
+            Menu_LoadDecrypted.Click += Menu_LoadDecrypted_Click;
+
+            Menu_VerifyHashes = new Button { Text = "Verify Hashes" };
+            Menu_VerifyHashes.Click += Menu_VerifyHashes_Click;
+
+            Menu_RAMEdit = new Button { Text = "RAM Edit" };
+            Menu_RAMEdit.Click += Menu_RAMEdit_Click;
+
+            Menu_ItemImages = new Button { Text = "Item Images" };
+            Menu_ItemImages.Click += Menu_ItemImages_Click;
+
+            Menu_SavePNG = new Button { Text = "Save PNG" };
+            Menu_SavePNG.Click += Menu_SavePNG_Click;
+
+            B_EditPlayerItems = new Button { Text = "Edit Player Items" };
+            B_EditPlayerItems.Click += B_EditPlayerItems_Click;
+
+            B_Storage = new Button { Text = "Storage" };
+            B_Storage.Click += B_Storage_Click;
+
+            B_RecycleBin = new Button { Text = "Recycle Bin" };
+            B_RecycleBin.Click += B_RecycleBin_Click;
+
+            B_EditPlayerRecipes = new Button { Text = "Edit Player Recipes" };
+            B_EditPlayerRecipes.Click += B_EditPlayerRecipes_Click;
+
+            B_EditPlayerReceivedItems = new Button { Text = "Edit Player Received Items" };
+            B_EditPlayerReceivedItems.Click += B_EditPlayerReceivedItems_Click;
+
+            B_EditPlayerReactions = new Button { Text = "Edit Player Reactions" };
+            B_EditPlayerReactions.Click += B_EditPlayerReactions_Click;
+
+            B_EditPlayerMisc = new Button { Text = "Edit Player Misc" };
+            B_EditPlayerMisc.Click += B_EditPlayerMisc_Click;
+
+            B_EditAchievements = new Button { Text = "Edit Achievements" };
+            B_EditAchievements.Click += B_EditAchievements_Click;
+
+            B_EditPlayerFlags = new Button { Text = "Edit Player Flags" };
+            B_EditPlayerFlags.Click += B_EditPlayerFlags_Click;
+
+            B_EditTurnipExchange = new Button { Text = "Edit Turnip Exchange" };
+            B_EditTurnipExchange.Click += B_EditTurnipExchange_Click;
+
+            B_EditFieldItems = new Button { Text = "Edit Field Items" };
+            B_EditFieldItems.Click += B_EditFieldItems_Click;
+
+            B_EditLandFlags = new Button { Text = "Edit Land Flags" };
+            B_EditLandFlags.Click += B_EditLandFlags_Click;
+
+            B_EditPatterns = new Button { Text = "Edit Patterns" };
+            B_EditPatterns.Click += B_EditPatterns_Click;
+
+            B_EditPRODesigns = new Button { Text = "Edit PRO Designs" };
+            B_EditPRODesigns.Click += B_EditPRODesigns_Click;
+
+            B_EditPatternFlag = new Button { Text = "Edit Pattern Flag" };
+            B_EditPatternFlag.Click += B_EditPatternFlag_Click;
+
+            B_EditDesignsTailor = new Button { Text = "Edit Designs Tailor" };
+            B_EditDesignsTailor.Click += B_EditDesignsTailor_Click;
+
+            B_EditPlayer = new Button { Text = "Edit Player" };
+            B_EditPlayer.Click += B_EditPlayer_Click;
+
+            B_EditMap = new Button { Text = "Edit Map" };
+            B_EditMap.Click += B_EditMap_Click;
+
+            B_EditPlayerHouses = new Button { Text = "Edit Player Houses" };
+            B_EditPlayerHouses.Click += B_EditPlayerHouses_Click;
+
+            B_EditBulletin = new Button { Text = "Edit Bulletin" };
+            B_EditBulletin.Click += B_EditBulletin_Click;
+
+            B_EditFieldGoods = new Button { Text = "Edit Field Goods" };
+            B_EditFieldGoods.Click += B_EditFieldGoods_Click;
+
+            B_EditMuseum = new Button { Text = "Edit Museum" };
+            B_EditMuseum.Click += B_EditMuseum_Click_Click;
+
+            B_EditVisitors = new Button { Text = "Edit Visitors" };
+            B_EditVisitors.Click += B_EditVisitors_Click;
+
+            CB_Players = new DropDown();
+            CB_Players.SelectedIndexChanged += LoadPlayer;
+
+            TB_Name = new TextBox();
+            TB_TownName = new TextBox();
+            NUD_BankBells = new NumericUpDown();
+            NUD_NookMiles = new NumericUpDown();
+            NUD_TotalNookMiles = new NumericUpDown();
+            NUD_Wallet = new NumericUpDown();
+            NUD_PocketCount1 = new NumericUpDown();
+            NUD_PocketCount2 = new NumericUpDown();
+            NUD_StorageCount = new NumericUpDown();
+            NUD_Poki = new NumericUpDown();
+            L_Poki = new Label { Text = "Poki" };
+            PB_Player = new ImageView();
+            CB_Hemisphere = new DropDown();
+            CB_AirportColor = new DropDown();
+            NUD_WeatherSeed = new NumericUpDown();
+            Tab_Villagers = new TabPage { Text = "Villagers" };
+
+            var layout = new DynamicLayout();
+            layout.BeginVertical();
+            layout.Add(Menu_Options);
+            layout.Add(Menu_Save);
+            layout.Add(Menu_DumpDecrypted);
+            layout.Add(Menu_LoadDecrypted);
+            layout.Add(Menu_VerifyHashes);
+            layout.Add(Menu_RAMEdit);
+            layout.Add(Menu_ItemImages);
+            layout.Add(Menu_SavePNG);
+            layout.Add(B_EditPlayerItems);
+            layout.Add(B_Storage);
+            layout.Add(B_RecycleBin);
+            layout.Add(B_EditPlayerRecipes);
+            layout.Add(B_EditPlayerReceivedItems);
+            layout.Add(B_EditPlayerReactions);
+            layout.Add(B_EditPlayerMisc);
+            layout.Add(B_EditAchievements);
+            layout.Add(B_EditPlayerFlags);
+            layout.Add(B_EditTurnipExchange);
+            layout.Add(B_EditFieldItems);
+            layout.Add(B_EditLandFlags);
+            layout.Add(B_EditPatterns);
+            layout.Add(B_EditPRODesigns);
+            layout.Add(B_EditPatternFlag);
+            layout.Add(B_EditDesignsTailor);
+            layout.Add(B_EditPlayer);
+            layout.Add(B_EditMap);
+            layout.Add(B_EditPlayerHouses);
+            layout.Add(B_EditBulletin);
+            layout.Add(B_EditFieldGoods);
+            layout.Add(B_EditMuseum);
+            layout.Add(B_EditVisitors);
+            layout.Add(CB_Players);
+            layout.Add(TB_Name);
+            layout.Add(TB_TownName);
+            layout.Add(NUD_BankBells);
+            layout.Add(NUD_NookMiles);
+            layout.Add(NUD_TotalNookMiles);
+            layout.Add(NUD_Wallet);
+            layout.Add(NUD_PocketCount1);
+            layout.Add(NUD_PocketCount2);
+            layout.Add(NUD_StorageCount);
+            layout.Add(NUD_Poki);
+            layout.Add(L_Poki);
+            layout.Add(PB_Player);
+            layout.Add(CB_Hemisphere);
+            layout.Add(CB_AirportColor);
+            layout.Add(NUD_WeatherSeed);
+            layout.Add(Tab_Villagers);
+            layout.EndVertical();
+
+            Content = layout;
+        }
+
+        private ButtonMenuItem Menu_Settings;
+        private DropDown Menu_Language;
+        private ButtonMenuItem Menu_Options;
+        private Button Menu_Save;
+        private Button Menu_DumpDecrypted;
+        private Button Menu_LoadDecrypted;
+        private Button Menu_VerifyHashes;
+        private Button Menu_RAMEdit;
+        private Button Menu_ItemImages;
+        private Button Menu_SavePNG;
+        private Button B_EditPlayerItems;
+        private Button B_Storage;
+        private Button B_RecycleBin;
+        private Button B_EditPlayerRecipes;
+        private Button B_EditPlayerReceivedItems;
+        private Button B_EditPlayerReactions;
+        private Button B_EditPlayerMisc;
+        private Button B_EditAchievements;
+        private Button B_EditPlayerFlags;
+        private Button B_EditTurnipExchange;
+        private Button B_EditFieldItems;
+        private Button B_EditLandFlags;
+        private Button B_EditPatterns;
+        private Button B_EditPRODesigns;
+        private Button B_EditPatternFlag;
+        private Button B_EditDesignsTailor;
+        private Button B_EditPlayer;
+        private Button B_EditMap;
+        private Button B_EditPlayerHouses;
+        private Button B_EditBulletin;
+        private Button B_EditFieldGoods;
+        private Button B_EditMuseum;
+        private Button B_EditVisitors;
+        private DropDown CB_Players;
+        private TextBox TB_Name;
+        private TextBox TB_TownName;
+        private NumericUpDown NUD_BankBells;
+        private NumericUpDown NUD_NookMiles;
+        private NumericUpDown NUD_TotalNookMiles;
+        private NumericUpDown NUD_Wallet;
+        private NumericUpDown NUD_PocketCount1;
+        private NumericUpDown NUD_PocketCount2;
+        private NumericUpDown NUD_StorageCount;
+        private NumericUpDown NUD_Poki;
+        private Label L_Poki;
+        private ImageView PB_Player;
+        private DropDown CB_Hemisphere;
+        private DropDown CB_AirportColor;
+        private NumericUpDown NUD_WeatherSeed;
+        private TabPage Tab_Villagers;
     }
 }

@@ -1,14 +1,15 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Linq;
-using System.Windows.Forms;
+using Eto.Forms;
+using Eto.Drawing;
 using NHSE.Core;
 using NHSE.Sprites;
 using NHSE.Villagers;
 
 namespace NHSE.WinForms
 {
-    public partial class VillagerEditor : UserControl
+    public partial class VillagerEditor : Panel
     {
         public IVillager[] Villagers;
         public IVillagerOrigin Origin;
@@ -18,10 +19,10 @@ namespace NHSE.WinForms
 
         public VillagerEditor(IVillager[] villagers, IVillagerOrigin origin, HorizonSave sav, bool hasHouses)
         {
-            InitializeComponent();
             Villagers = villagers;
             Origin = origin;
             SAV = sav;
+            InitializeComponent();
             LoadVillagers();
 
             B_EditHouses.Visible = hasHouses;
@@ -84,33 +85,31 @@ namespace NHSE.WinForms
             if (!CHK_VillagerMovingOut.Checked)
                 return;
 
-            WinFormsUtil.Alert(MessageStrings.MsgMoveOut, MessageStrings.MsgMoveOutSuggest);
+            MessageBox.Show(MessageStrings.MsgMoveOut, MessageStrings.MsgMoveOutSuggest);
         }
 
         private void B_DumpVillager_Click(object sender, EventArgs e)
         {
-            if (ModifierKeys == Keys.Shift)
+            if (Keyboard.Modifiers == Keys.Shift)
             {
-                using var fbd = new FolderBrowserDialog();
-                if (fbd.ShowDialog() != DialogResult.OK)
+                using var fbd = new SelectFolderDialog();
+                if (fbd.ShowDialog(this) != DialogResult.Ok)
                     return;
 
-                var dir = Path.GetDirectoryName(fbd.SelectedPath);
+                var dir = Path.GetDirectoryName(fbd.Directory);
                 if (dir == null || !Directory.Exists(dir))
                     return;
-                Villagers.Dump(fbd.SelectedPath);
+                Villagers.Dump(fbd.Directory);
                 return;
             }
 
             var name = L_ExternalName.Text;
             using var sfd = new SaveFileDialog
             {
-                Filter = "New Horizons Villager (*.nhv)|*.nhv|" +
-                         "New Horizons Villager (*.nhv2)|*.nhv2|" +
-                         "All files (*.*)|*.*",
+                Filters = { new FileDialogFilter("New Horizons Villager", ".nhv"), new FileDialogFilter("New Horizons Villager", ".nhv2"), new FileDialogFilter("All files", ".*") },
                 FileName = $"{name}.{Villagers[VillagerIndex].Extension}",
             };
-            if (sfd.ShowDialog() != DialogResult.OK)
+            if (sfd.ShowDialog(this) != DialogResult.Ok)
                 return;
 
             SaveVillager(VillagerIndex);
@@ -123,12 +122,10 @@ namespace NHSE.WinForms
             var name = L_ExternalName.Text;
             using var ofd = new OpenFileDialog
             {
-                Filter = "New Horizons Villager (*.nhv)|*.nhv|" +
-                         "New Horizons Villager (*.nhv2)|*.nhv2|" +
-                         "All files (*.*)|*.*",
+                Filters = { new FileDialogFilter("New Horizons Villager", ".nhv"), new FileDialogFilter("New Horizons Villager", ".nhv2"), new FileDialogFilter("All files", ".*") },
                 FileName = $"{name}.{Villagers[VillagerIndex].Extension}",
             };
-            if (ofd.ShowDialog() != DialogResult.OK)
+            if (ofd.ShowDialog(this) != DialogResult.Ok)
                 return;
 
             var path = ofd.FileName;
@@ -136,7 +133,7 @@ namespace NHSE.WinForms
             var fi = new FileInfo(path);
             if (!VillagerConverter.IsCompatible((int)fi.Length, expectLength))
             {
-                WinFormsUtil.Error(string.Format(MessageStrings.MsgDataSizeMismatchImport, fi.Length, expectLength), path);
+                MessageBox.Show(string.Format(MessageStrings.MsgDataSizeMismatchImport, fi.Length, expectLength), path);
                 return;
             }
 
@@ -144,7 +141,7 @@ namespace NHSE.WinForms
             data = VillagerConverter.GetCompatible(data, expectLength);
             if (data.Length != expectLength)
             {
-                WinFormsUtil.Error(string.Format(MessageStrings.MsgDataSizeMismatchImport, fi.Length, expectLength), path);
+                MessageBox.Show(string.Format(MessageStrings.MsgDataSizeMismatchImport, fi.Length, expectLength), path);
                 return;
             }
 
@@ -153,7 +150,7 @@ namespace NHSE.WinForms
             if (!v.IsOriginatedFrom(player0))
             {
                 string msg = string.Format(MessageStrings.MsgDataDidNotOriginateFromHost_0, player0.PlayerName);
-                var result = WinFormsUtil.Prompt(MessageBoxButtons.YesNoCancel, msg, MessageStrings.MsgAskUpdateValues);
+                var result = MessageBox.Show(msg, MessageStrings.MsgAskUpdateValues, MessageBoxButtons.YesNoCancel);
                 if (result == DialogResult.Cancel)
                     return;
                 if (result == DialogResult.Yes)
@@ -168,7 +165,7 @@ namespace NHSE.WinForms
             var v = Villagers[VillagerIndex];
             var items = v.WearStockList;
             using var editor = new PlayerItemEditor(items, 8, 3);
-            if (editor.ShowDialog() == DialogResult.OK)
+            if (editor.ShowDialog(this) == DialogResult.Ok)
                 v.WearStockList = items;
         }
 
@@ -177,7 +174,7 @@ namespace NHSE.WinForms
             var v = Villagers[VillagerIndex];
             var items = v.FtrStockList;
             using var editor = new PlayerItemEditor(items, 8, 4);
-            if (editor.ShowDialog() == DialogResult.OK)
+            if (editor.ShowDialog(this) == DialogResult.Ok)
                 v.FtrStockList = items;
         }
 
@@ -186,7 +183,7 @@ namespace NHSE.WinForms
             var v = Villagers[VillagerIndex];
             var flags = v.GetEventFlagsSave();
             using var editor = new VillagerFlagEditor(flags);
-            if (editor.ShowDialog() == DialogResult.OK)
+            if (editor.ShowDialog(this) == DialogResult.Ok)
                 v.SetEventFlagsSave(flags);
         }
 
@@ -206,18 +203,18 @@ namespace NHSE.WinForms
             var villagers = SAV.Main.GetVillagers();
             var houses = SAV.Main.GetVillagerHouses();
             using var editor = new VillagerHouseEditor(houses, villagers, SAV.Main, VillagerIndex);
-            if (editor.ShowDialog() == DialogResult.OK)
+            if (editor.ShowDialog(this) == DialogResult.Ok)
                 SAV.Main.SetVillagerHouses(houses);
         }
 
-        private static void ShowContextMenuBelow(ToolStripDropDown c, Control n) => c.Show(n.PointToScreen(new System.Drawing.Point(0, n.Height)));
+        private static void ShowContextMenuBelow(ContextMenu c, Control n) => c.Show(n.PointToScreen(new Point(0, n.Height)));
         private void B_EditVillager_Click(object sender, EventArgs e) => ShowContextMenuBelow(CM_EditVillager, B_EditVillager);
 
         private void B_EditVillagerRoom_Click(object sender, EventArgs e)
         {
             var v = Villagers[VillagerIndex];
             using var editor = new SaveRoomFloorWallEditor(v.Room);
-            if (editor.ShowDialog() == DialogResult.OK)
+            if (editor.ShowDialog(this) == DialogResult.Ok)
                 v.Room = editor.Entity;
         }
 
@@ -230,15 +227,15 @@ namespace NHSE.WinForms
             using var editor = new PatternEditorPRO(tmp);
             playerID.CopyTo(tmp[0].Data, 0x54); // overwrite playerID bytes
             townID.CopyTo(tmp[0].Data, 0x38); // overwrite townID bytes
-            if (editor.ShowDialog() == DialogResult.OK)
+            if (editor.ShowDialog(this) == DialogResult.Ok)
                 v.Design = tmp[0];
         }
 
         private void B_EditVillagerPlayerMemories_Click(object sender, EventArgs e)
         {
-            if (ModifierKeys == Keys.Shift)
+            if (Keyboard.Modifiers == Keys.Shift)
             {
-                var prompt = WinFormsUtil.Prompt(MessageBoxButtons.YesNo, MessageStrings.MsgVillagerFriendshipMax);
+                var prompt = MessageBox.Show(MessageStrings.MsgVillagerFriendshipMax, MessageBoxButtons.YesNo);
                 if (prompt != DialogResult.Yes)
                     return;
                 foreach (var villager in Villagers)
@@ -249,7 +246,7 @@ namespace NHSE.WinForms
 
             var v = Villagers[VillagerIndex];
             using var editor = new VillagerMemoryEditor(v);
-            if (editor.ShowDialog() == DialogResult.OK)
+            if (editor.ShowDialog(this) == DialogResult.Ok)
             { } // editor saves our changes
         }
 
@@ -257,7 +254,7 @@ namespace NHSE.WinForms
         {
             var v = Villagers[VillagerIndex];
             using var editor = new VillagerDIYTimerEditor(v);
-            if (editor.ShowDialog() == DialogResult.OK)
+            if (editor.ShowDialog(this) == DialogResult.Ok)
             { } // editor saves our changes
         }
 
@@ -266,8 +263,8 @@ namespace NHSE.WinForms
             if (Loading)
                 return;
 
-            var prompt = WinFormsUtil.Prompt(MessageBoxButtons.OKCancel, MessageStrings.MsgMoveOutAll);
-            if (prompt != DialogResult.OK)
+            var prompt = MessageBox.Show(MessageStrings.MsgMoveOutAll, MessageBoxButtons.OkCancel);
+            if (prompt != DialogResult.Ok)
                 return;
 
             foreach (var villager in Villagers)
@@ -285,19 +282,19 @@ namespace NHSE.WinForms
 
         private void B_ReplaceVillager_Click(object sender, EventArgs e)
         {
-            if (!Clipboard.ContainsText())
+            if (!Clipboard.Instance.ContainsText)
             {
-                WinFormsUtil.Error(MessageStrings.MsgVillagerReplaceNoText);
+                MessageBox.Show(MessageStrings.MsgVillagerReplaceNoText);
                 return;
             }
 
-            var internalName = Clipboard.GetText();
+            var internalName = Clipboard.Instance.Text;
             if (!VillagerResources.IsVillagerDataKnown(internalName))
             {
                 internalName = GameInfo.Strings.VillagerMap.FirstOrDefault(z => string.Equals(z.Value, internalName, StringComparison.InvariantCultureIgnoreCase)).Key;
                 if (internalName == default)
                 {
-                    WinFormsUtil.Error(string.Format(MessageStrings.MsgVillagerReplaceUnknownName, internalName));
+                    MessageBox.Show(string.Format(MessageStrings.MsgVillagerReplaceUnknownName, internalName));
                     return;
                 }
             }
@@ -306,7 +303,7 @@ namespace NHSE.WinForms
             var villager = Villagers[index];
             if (villager is not Villager2 v2)
             {
-                WinFormsUtil.Error(MessageStrings.MsgVillagerReplaceOutdatedSaveFormat);
+                MessageBox.Show(MessageStrings.MsgVillagerReplaceOutdatedSaveFormat);
                 return;
             }
 
@@ -321,5 +318,87 @@ namespace NHSE.WinForms
             LoadVillager(Villagers[index] = nv);
             System.Media.SystemSounds.Asterisk.Play();
         }
+
+        private void InitializeComponent()
+        {
+            NUD_Villager = new NumericUpDown();
+            NUD_Species = new NumericUpDown();
+            NUD_Variant = new NumericUpDown();
+            CB_Personality = new DropDown();
+            TB_Catchphrase = new TextBox();
+            CHK_VillagerMovingOut = new CheckBox();
+            B_DumpVillager = new Button();
+            B_LoadVillager = new Button();
+            B_EditWear = new Button();
+            B_EditFurniture = new Button();
+            B_EditVillagerFlags = new Button();
+            B_EditHouse = new Button();
+            B_EditVillager = new Button();
+            B_EditVillagerRoom = new Button();
+            B_EditVillagerDesign = new Button();
+            B_EditVillagerPlayerMemories = new Button();
+            B_EditDIYTimer = new Button();
+            B_MoveOutAllVillagers = new Button();
+            B_SetPhraseOriginal = new Button();
+            B_ReplaceVillager = new Button();
+            L_InternalName = new Label();
+            L_ExternalName = new Label();
+            PB_Villager = new ImageView();
+            CM_EditVillager = new ContextMenu();
+
+            var layout = new DynamicLayout();
+            layout.BeginVertical();
+            layout.Add(NUD_Villager);
+            layout.Add(NUD_Species);
+            layout.Add(NUD_Variant);
+            layout.Add(CB_Personality);
+            layout.Add(TB_Catchphrase);
+            layout.Add(CHK_VillagerMovingOut);
+            layout.Add(B_DumpVillager);
+            layout.Add(B_LoadVillager);
+            layout.Add(B_EditWear);
+            layout.Add(B_EditFurniture);
+            layout.Add(B_EditVillagerFlags);
+            layout.Add(B_EditHouse);
+            layout.Add(B_EditVillager);
+            layout.Add(B_EditVillagerRoom);
+            layout.Add(B_EditVillagerDesign);
+            layout.Add(B_EditVillagerPlayerMemories);
+            layout.Add(B_EditDIYTimer);
+            layout.Add(B_MoveOutAllVillagers);
+            layout.Add(B_SetPhraseOriginal);
+            layout.Add(B_ReplaceVillager);
+            layout.Add(L_InternalName);
+            layout.Add(L_ExternalName);
+            layout.Add(PB_Villager);
+            layout.EndVertical();
+
+            Content = layout;
+        }
+
+        private NumericUpDown NUD_Villager;
+        private NumericUpDown NUD_Species;
+        private NumericUpDown NUD_Variant;
+        private DropDown CB_Personality;
+        private TextBox TB_Catchphrase;
+        private CheckBox CHK_VillagerMovingOut;
+        private Button B_DumpVillager;
+        private Button B_LoadVillager;
+        private Button B_EditWear;
+        private Button B_EditFurniture;
+        private Button B_EditVillagerFlags;
+        private Button B_EditHouse;
+        private Button B_EditVillager;
+        private Button B_EditVillagerRoom;
+        private Button B_EditVillagerDesign;
+        private Button B_EditVillagerPlayerMemories;
+        private Button B_EditDIYTimer;
+        private Button B_MoveOutAllVillagers;
+        private Button B_SetPhraseOriginal;
+        private Button B_ReplaceVillager;
+        private Label L_InternalName;
+        private Label L_ExternalName;
+        private ImageView PB_Villager;
+        private ContextMenu CM_EditVillager;
     }
 }

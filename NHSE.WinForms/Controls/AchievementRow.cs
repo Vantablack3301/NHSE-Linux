@@ -1,12 +1,16 @@
-﻿using System;
+using System;
 using System.Drawing;
-using System.Windows.Forms;
+using Eto.Forms;
 using NHSE.Core;
 
 namespace NHSE.WinForms
 {
-    public partial class AchievementRow : UserControl
+    public partial class AchievementRow : Panel
     {
+        private Label L_Threshold;
+        private CheckBox CHK_Read;
+        private DateTimePicker CAL_Date;
+
         public AchievementRow()
         {
             InitializeComponent();
@@ -52,13 +56,49 @@ namespace NHSE.WinForms
                 return;
 
             bool satisfied = detail.GetIsSatisfied(row, count);
-            L_Threshold.ForeColor = satisfied ? Color.Red : CHK_Read.ForeColor;
+            L_Threshold.TextColor = satisfied ? Colors.Red : CHK_Read.TextColor;
         }
 
         private void CAL_Date_MouseDown(object sender, MouseEventArgs e)
         {
-            if ((ModifierKeys & Keys.Alt) != 0 && e.Button == MouseButtons.Left)
+            if ((Keyboard.Modifiers & Keys.Alt) != 0 && e.Buttons == MouseButtons.Primary)
                 CAL_Date.Value = CAL_Date.MinDate;
+        }
+
+        private void InitializeComponent()
+        {
+            L_Threshold = new Label
+            {
+                Location = new Point(3, 0),
+                Size = new Size(80, 20),
+                Text = "1",
+                TextAlignment = TextAlignment.Right
+            };
+
+            CHK_Read = new CheckBox
+            {
+                Location = new Point(295, 3),
+                Size = new Size(52, 17),
+                Text = "Read"
+            };
+
+            CAL_Date = new DateTimePicker
+            {
+                Location = new Point(89, 0),
+                Size = new Size(200, 20)
+            };
+            CAL_Date.MouseDown += CAL_Date_MouseDown;
+
+            Content = new StackLayout
+            {
+                Orientation = Orientation.Horizontal,
+                Items =
+                {
+                    L_Threshold,
+                    CHK_Read,
+                    CAL_Date
+                }
+            };
         }
     }
 }

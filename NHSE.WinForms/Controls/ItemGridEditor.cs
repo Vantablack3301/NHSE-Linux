@@ -1,20 +1,20 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
-using System.Windows.Forms;
+using Eto.Drawing;
+using Eto.Forms;
 using NHSE.Core;
 using NHSE.Sprites;
 
 namespace NHSE.WinForms
 {
-    public partial class ItemGridEditor : UserControl
+    public partial class ItemGridEditor : Panel
     {
         private static readonly GridSize Sprites = new();
         private readonly ItemEditor Editor;
         private readonly IReadOnlyList<Item> Items;
 
-        private IList<PictureBox> SlotPictureBoxes = Array.Empty<PictureBox>();
+        private IList<ImageView> SlotImageViews = Array.Empty<ImageView>();
         private int Count => Items.Count;
         private int Page;
         private int ItemsPerPage;
@@ -41,21 +41,21 @@ namespace NHSE.WinForms
 
         private void InitializeSlots()
         {
-            SlotPictureBoxes = ItemGrid.Entries;
-            foreach (var pb in SlotPictureBoxes)
+            SlotImageViews = ItemGrid.Entries;
+            foreach (var iv in SlotImageViews)
             {
-                pb.MouseEnter += Slot_MouseEnter;
-                pb.MouseLeave += Slot_MouseLeave;
-                pb.MouseClick += Slot_MouseClick;
-                pb.MouseWheel += Slot_MouseWheel;
-                pb.ContextMenuStrip = CM_Hand;
+                iv.MouseEnter += Slot_MouseEnter;
+                iv.MouseLeave += Slot_MouseLeave;
+                iv.MouseDown += Slot_MouseClick;
+                iv.MouseWheel += Slot_MouseWheel;
+                iv.ContextMenu = CM_Hand;
             }
             ChangePage();
         }
 
         private void Slot_MouseWheel(object? sender, MouseEventArgs e)
         {
-            var delta = e.Delta < 0 ? 1 : -1; // scrolling down increases page #
+            var delta = e.Delta.Height < 0 ? 1 : -1; // scrolling down increases page #
             var newpage = Math.Min(PageCount - 1, Math.Max(0, Page + delta));
             if (newpage == Page)
                 return;
@@ -65,19 +65,19 @@ namespace NHSE.WinForms
 
         public void Slot_MouseEnter(object? sender, EventArgs e)
         {
-            if (sender is not PictureBox pb)
+            if (sender is not ImageView iv)
                 return;
-            var index = SlotPictureBoxes.IndexOf(pb);
+            var index = SlotImageViews.IndexOf(iv);
             var item = GetItem(index);
 
             var text = GetItemText(item);
-            HoverTip.SetToolTip(pb, text);
+            HoverTip.SetToolTip(iv, text);
             L_ItemName.Text = text;
         }
 
         public void Slot_MouseLeave(object? sender, EventArgs e)
         {
-            if (sender is not PictureBox)
+            if (sender is not ImageView)
                 return;
             L_ItemName.Text = string.Empty;
             HoverTip.RemoveAll();
@@ -89,7 +89,7 @@ namespace NHSE.WinForms
         {
             if (sender == null)
                 return;
-            switch (ModifierKeys)
+            switch (Keyboard.Modifiers)
             {
                 case Keys.Control | Keys.Alt: ClickClone(sender, e); break;
                 case Keys.Control: ClickView(sender, e); break;
@@ -113,69 +113,69 @@ namespace NHSE.WinForms
 
         private void ClickView(object sender, EventArgs e)
         {
-            var pb = WinFormsUtil.GetUnderlyingControl<PictureBox>(sender);
-            if (pb == null)
+            var iv = WinFormsUtil.GetUnderlyingControl<ImageView>(sender);
+            if (iv == null)
                 return;
-            var index = SlotPictureBoxes.IndexOf(pb);
+            var index = SlotImageViews.IndexOf(iv);
             LoadItem(index);
         }
 
         private void ClickSet(object sender, EventArgs e)
         {
-            var pb = WinFormsUtil.GetUnderlyingControl<PictureBox>(sender);
-            if (pb == null)
+            var iv = WinFormsUtil.GetUnderlyingControl<ImageView>(sender);
+            if (iv == null)
                 return;
-            var index = SlotPictureBoxes.IndexOf(pb);
+            var index = SlotImageViews.IndexOf(iv);
             var item = SetItem(index);
-            SetItemSprite(item, pb);
+            SetItemSprite(item, iv);
             ItemUpdated();
         }
 
         private void ClickDelete(object sender, EventArgs e)
         {
-            var pb = WinFormsUtil.GetUnderlyingControl<PictureBox>(sender);
-            if (pb == null)
+            var iv = WinFormsUtil.GetUnderlyingControl<ImageView>(sender);
+            if (iv == null)
                 return;
-            var index = SlotPictureBoxes.IndexOf(pb);
+            var index = SlotImageViews.IndexOf(iv);
             var item = GetItem(index);
             item.Delete();
-            SetItemSprite(item, pb);
+            SetItemSprite(item, iv);
             ItemUpdated();
         }
 
         private void ClickClone(object sender, EventArgs e)
         {
-            var pb = WinFormsUtil.GetUnderlyingControl<PictureBox>(sender);
-            if (pb == null)
+            var iv = WinFormsUtil.GetUnderlyingControl<ImageView>(sender);
+            if (iv == null)
                 return;
-            var index = SlotPictureBoxes.IndexOf(pb);
+            var index = SlotImageViews.IndexOf(iv);
             var item = GetItem(index);
-            for (int i = 0; i < SlotPictureBoxes.Count; i++)
+            for (int i = 0; i < SlotImageViews.Count; i++)
             {
                 if (i == index)
                     continue;
                 var dest = GetItem(i);
                 dest.CopyFrom(item);
-                SetItemSprite(item, SlotPictureBoxes[i]);
+                SetItemSprite(item, SlotImageViews[i]);
                 ItemUpdated();
             }
             System.Media.SystemSounds.Asterisk.Play();
         }
 
-        private void SetItemSprite(Item item, PictureBox pb)
+        private void SetItemSprite(Item item, ImageView iv)
         {
             var dw = Sprites.Width;
             var dh = Sprites.Height;
             var font = L_ItemName.Font;
-            pb.BackColor = ItemColor.GetItemColor(item);
-            pb.BackgroundImage = ItemSprite.GetItemSprite(item);
+            iv.BackgroundColor = ItemColor.GetItemColor(item);
+            iv.Image = ItemSprite.GetItemSprite(item);
             var backing = new Bitmap(dw, dh);
-            pb.Image = ItemSprite.GetItemMarkup(item, font, dw, dh, backing);
+            iv.Image = ItemSprite.GetItemMarkup(item, font, dw, dh, backing);
         }
 
         private static int GetPageJump()
         {
-            return ModifierKeys switch
+            return Keyboard.Modifiers switch
             {
                 Keys.Control => 10,
                 Keys.Alt => 25,
@@ -215,20 +215,20 @@ namespace NHSE.WinForms
 
         public void LoadItems()
         {
-            for (int i = 0; i < SlotPictureBoxes.Count; i++)
+            for (int i = 0; i < SlotImageViews.Count; i++)
             {
                 var item = GetItem(i);
-                SetItemSprite(item, SlotPictureBoxes[i]);
+                SetItemSprite(item, SlotImageViews[i]);
             }
             ItemUpdated();
         }
 
-        private static void ShowContextMenuBelow(ToolStripDropDown c, Control n) => c.Show(n.PointToScreen(new Point(0, n.Height)));
+        private static void ShowContextMenuBelow(ContextMenu c, Control n) => c.Show(n.PointToScreen(new Point(0, n.Height)));
         private void B_Clear_Click(object sender, EventArgs e) => ShowContextMenuBelow(CM_Remove, B_Clear);
 
         private void ClearItemIf(Func<Item, bool> criteria)
         {
-            bool all = ModifierKeys == Keys.Shift;
+            bool all = Keyboard.Modifiers == Keys.Shift;
             int start = 0, end = Items.Count - 1;
             if (!all)
             {
@@ -308,6 +308,46 @@ namespace NHSE.WinForms
         {
             public int Width { get; set; } = 64;
             public int Height { get; set; } = 64;
+        }
+
+        private Label L_ItemName;
+        private ItemGrid ItemGrid;
+        private Button B_Up;
+        private Button B_Down;
+        private Label L_Page;
+        private ContextMenu CM_Hand;
+        private ContextMenu CM_Sort;
+        private Button B_Clear;
+        private Button B_Sort;
+        private ContextMenu CM_Remove;
+        private ToolTip HoverTip;
+
+        private void InitializeComponent()
+        {
+            L_ItemName = new Label();
+            ItemGrid = new ItemGrid();
+            B_Up = new Button();
+            B_Down = new Button();
+            L_Page = new Label();
+            CM_Hand = new ContextMenu();
+            CM_Sort = new ContextMenu();
+            B_Clear = new Button();
+            B_Sort = new Button();
+            CM_Remove = new ContextMenu();
+            HoverTip = new ToolTip();
+
+            var layout = new DynamicLayout();
+            layout.BeginVertical();
+            layout.Add(L_ItemName);
+            layout.Add(ItemGrid);
+            layout.Add(B_Up);
+            layout.Add(L_Page);
+            layout.Add(B_Down);
+            layout.Add(B_Clear);
+            layout.Add(B_Sort);
+            layout.EndVertical();
+
+            Content = layout;
         }
     }
 }

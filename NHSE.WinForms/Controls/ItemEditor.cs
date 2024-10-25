@@ -1,14 +1,14 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Windows.Forms;
+using Eto.Forms;
 using NHSE.Core;
 using NHSE.Sprites;
 
 namespace NHSE.WinForms
 {
-    public partial class ItemEditor : UserControl
+    public partial class ItemEditor : Panel
     {
         private readonly List<ComboItem> Recipes = GameInfo.Strings.CreateItemDataSource(RecipeList.Recipes, false);
         private readonly List<ComboItem> Fossils = GameInfo.Strings.CreateItemDataSource(GameLists.Fossils, false);
@@ -375,7 +375,7 @@ namespace NHSE.WinForms
         {
             var entered = CB_ItemID.Text;
             var itemNames = AllItems.Where(z => z.Text.Contains(entered)).Take(10).Select(z => z.Text);
-            var caption = string.Join(Environment.NewLine, itemNames);
+            var caption = string.join(Environment.NewLine, itemNames);
             TT_Search.SetToolTip(CB_ItemID, caption);
         }
 
@@ -407,5 +407,225 @@ namespace NHSE.WinForms
             Clipboard.SetText($"{u64:X16}");
             System.Media.SystemSounds.Asterisk.Play();
         }
+
+        private void InitializeComponent()
+        {
+            CB_ItemID = new ComboBox();
+            NUD_Count = new NumericUpDown();
+            L_Count = new Label();
+            L_Uses = new Label();
+            NUD_Uses = new NumericUpDown();
+            L_Flag0 = new Label();
+            NUD_Flag0 = new NumericUpDown();
+            L_Flag1 = new Label();
+            NUD_Flag1 = new NumericUpDown();
+            CB_Recipe = new ComboBox();
+            FLP_Controls = new StackLayout();
+            PB_Item = new PictureBox();
+            FLP_Meta = new StackLayout();
+            CHK_IsExtension = new CheckBox();
+            PAN_DummyExtension = new Panel();
+            FLP_Extension = new StackLayout();
+            L_ExtensionX = new Label();
+            NUD_ExtensionX = new NumericUpDown();
+            L_ExtensionY = new Label();
+            NUD_ExtensionY = new NumericUpDown();
+            CB_Fossil = new ComboBox();
+            FLP_Item = new StackLayout();
+            FLP_Count = new StackLayout();
+            PAN_DummyCount = new Panel();
+            L_RemakeBody = new Label();
+            L_RemakeFabric = new Label();
+            FLP_Uses = new StackLayout();
+            FLP_Flag0 = new StackLayout();
+            FLP_Flower = new StackLayout();
+            FLP_Genetics = new StackLayout();
+            CHK_R2 = new CheckBox();
+            CHK_R1 = new CheckBox();
+            CHK_Y2 = new CheckBox();
+            CHK_Y1 = new CheckBox();
+            CHK_W2 = new CheckBox();
+            CHK_W1 = new CheckBox();
+            CHK_S2 = new CheckBox();
+            CHK_S1 = new CheckBox();
+            PAN_DummyFlower = new Panel();
+            FLP_FlowerFlags = new StackLayout();
+            CHK_IsWatered = new CheckBox();
+            NUD_WaterDays = new NumericUpDown();
+            L_WaterDays = new Label();
+            CHK_WV2 = new CheckBox();
+            CHK_WV1 = new CheckBox();
+            CHK_WV0 = new CheckBox();
+            CHK_WV5 = new CheckBox();
+            CHK_WV4 = new CheckBox();
+            CHK_WV3 = new CheckBox();
+            CHK_WV8 = new CheckBox();
+            CHK_WV7 = new CheckBox();
+            CHK_WV6 = new CheckBox();
+            CHK_WV9 = new CheckBox();
+            CHK_Gold = new CheckBox();
+            FLP_Flag1Group = new StackLayout();
+            FLP_Flag1 = new StackLayout();
+            CHK_Wrapped = new CheckBox();
+            FLP_Wrapped = new StackLayout();
+            CB_WrapType = new ComboBox();
+            CB_WrapColor = new ComboBox();
+            CHK_WrapShowName = new CheckBox();
+            CHK_Wrap80 = new CheckBox();
+            TT_Search = new ToolTip();
+
+            FLP_Controls.Orientation = Orientation.Vertical;
+            FLP_Controls.Items.Add(PB_Item);
+            FLP_Controls.Items.Add(FLP_Meta);
+            FLP_Controls.Items.Add(FLP_Item);
+            FLP_Controls.Items.Add(FLP_Flag1Group);
+
+            FLP_Meta.Orientation = Orientation.Vertical;
+            FLP_Meta.Items.Add(CB_ItemID);
+            FLP_Meta.Items.Add(CHK_IsExtension);
+            FLP_Meta.Items.Add(PAN_DummyExtension);
+            FLP_Meta.Items.Add(FLP_Extension);
+            FLP_Meta.Items.Add(CB_Recipe);
+            FLP_Meta.Items.Add(CB_Fossil);
+
+            FLP_Extension.Orientation = Orientation.Horizontal;
+            FLP_Extension.Items.Add(L_ExtensionX);
+            FLP_Extension.Items.Add(NUD_ExtensionX);
+            FLP_Extension.Items.Add(L_ExtensionY);
+            FLP_Extension.Items.Add(NUD_ExtensionY);
+
+            FLP_Item.Orientation = Orientation.Vertical;
+            FLP_Item.Items.Add(FLP_Count);
+            FLP_Item.Items.Add(FLP_Uses);
+            FLP_Item.Items.Add(FLP_Flag0);
+            FLP_Item.Items.Add(FLP_Flower);
+
+            FLP_Count.Orientation = Orientation.Horizontal;
+            FLP_Count.Items.Add(L_Count);
+            FLP_Count.Items.Add(NUD_Count);
+            FLP_Count.Items.Add(PAN_DummyCount);
+            FLP_Count.Items.Add(L_RemakeBody);
+            FLP_Count.Items.Add(L_RemakeFabric);
+
+            FLP_Uses.Orientation = Orientation.Horizontal;
+            FLP_Uses.Items.Add(L_Uses);
+            FLP_Uses.Items.Add(NUD_Uses);
+
+            FLP_Flag0.Orientation = Orientation.Horizontal;
+            FLP_Flag0.Items.Add(L_Flag0);
+            FLP_Flag0.Items.Add(NUD_Flag0);
+
+            FLP_Flower.Orientation = Orientation.Vertical;
+            FLP_Flower.Items.Add(FLP_Genetics);
+            FLP_Flower.Items.Add(PAN_DummyFlower);
+            FLP_Flower.Items.Add(FLP_FlowerFlags);
+
+            FLP_Genetics.Orientation = Orientation.Horizontal;
+            FLP_Genetics.Items.Add(CHK_R2);
+            FLP_Genetics.Items.Add(CHK_R1);
+            FLP_Genetics.Items.Add(CHK_Y2);
+            FLP_Genetics.Items.Add(CHK_Y1);
+            FLP_Genetics.Items.Add(CHK_W2);
+            FLP_Genetics.Items.Add(CHK_W1);
+            FLP_Genetics.Items.Add(CHK_S2);
+            FLP_Genetics.Items.Add(CHK_S1);
+
+            FLP_FlowerFlags.Orientation = Orientation.Horizontal;
+            FLP_FlowerFlags.Items.Add(CHK_IsWatered);
+            FLP_FlowerFlags.Items.Add(NUD_WaterDays);
+            FLP_FlowerFlags.Items.Add(L_WaterDays);
+            FLP_FlowerFlags.Items.Add(CHK_WV2);
+            FLP_FlowerFlags.Items.Add(CHK_WV1);
+            FLP_FlowerFlags.Items.Add(CHK_WV0);
+            FLP_FlowerFlags.Items.Add(CHK_WV5);
+            FLP_FlowerFlags.Items.Add(CHK_WV4);
+            FLP_FlowerFlags.Items.Add(CHK_WV3);
+            FLP_FlowerFlags.Items.Add(CHK_WV8);
+            FLP_FlowerFlags.Items.Add(CHK_WV7);
+            FLP_FlowerFlags.Items.Add(CHK_WV6);
+            FLP_FlowerFlags.Items.Add(CHK_WV9);
+            FLP_FlowerFlags.Items.Add(CHK_Gold);
+
+            FLP_Flag1Group.Orientation = Orientation.Vertical;
+            FLP_Flag1Group.Items.Add(FLP_Flag1);
+            FLP_Flag1Group.Items.Add(CHK_Wrapped);
+            FLP_Flag1Group.Items.Add(FLP_Wrapped);
+
+            FLP_Flag1.Orientation = Orientation.Horizontal;
+            FLP_Flag1.Items.Add(L_Flag1);
+            FLP_Flag1.Items.Add(NUD_Flag1);
+
+            FLP_Wrapped.Orientation = Orientation.Vertical;
+            FLP_Wrapped.Items.Add(CB_WrapType);
+            FLP_Wrapped.Items.Add(CB_WrapColor);
+            FLP_Wrapped.Items.Add(CHK_WrapShowName);
+            FLP_Wrapped.Items.Add(CHK_Wrap80);
+
+            Content = FLP_Controls;
+        }
+
+        private ComboBox CB_ItemID;
+        private NumericUpDown NUD_Count;
+        private Label L_Count;
+        private Label L_Uses;
+        private NumericUpDown NUD_Uses;
+        private Label L_Flag0;
+        private NumericUpDown NUD_Flag0;
+        private Label L_Flag1;
+        private NumericUpDown NUD_Flag1;
+        private ComboBox CB_Recipe;
+        private StackLayout FLP_Controls;
+        private PictureBox PB_Item;
+        private StackLayout FLP_Meta;
+        private CheckBox CHK_IsExtension;
+        private Panel PAN_DummyExtension;
+        private StackLayout FLP_Extension;
+        private Label L_ExtensionX;
+        private NumericUpDown NUD_ExtensionX;
+        private Label L_ExtensionY;
+        private NumericUpDown NUD_ExtensionY;
+        private ComboBox CB_Fossil;
+        private StackLayout FLP_Item;
+        private StackLayout FLP_Count;
+        private Panel PAN_DummyCount;
+        private Label L_RemakeBody;
+        private Label L_RemakeFabric;
+        private StackLayout FLP_Uses;
+        private StackLayout FLP_Flag0;
+        private StackLayout FLP_Flower;
+        private StackLayout FLP_Genetics;
+        private CheckBox CHK_R2;
+        private CheckBox CHK_R1;
+        private CheckBox CHK_Y2;
+        private CheckBox CHK_Y1;
+        private CheckBox CHK_W2;
+        private CheckBox CHK_W1;
+        private CheckBox CHK_S2;
+        private CheckBox CHK_S1;
+        private Panel PAN_DummyFlower;
+        private StackLayout FLP_FlowerFlags;
+        private CheckBox CHK_IsWatered;
+        private NumericUpDown NUD_WaterDays;
+        private Label L_WaterDays;
+        private CheckBox CHK_WV2;
+        private CheckBox CHK_WV1;
+        private CheckBox CHK_WV0;
+        private CheckBox CHK_WV5;
+        private CheckBox CHK_WV4;
+        private CheckBox CHK_WV3;
+        private CheckBox CHK_WV8;
+        private CheckBox CHK_WV7;
+        private CheckBox CHK_WV6;
+        private CheckBox CHK_WV9;
+        private CheckBox CHK_Gold;
+        private StackLayout FLP_Flag1Group;
+        private StackLayout FLP_Flag1;
+        private CheckBox CHK_Wrapped;
+        private StackLayout FLP_Wrapped;
+        private ComboBox CB_WrapType;
+        private ComboBox CB_WrapColor;
+        private CheckBox CHK_WrapShowName;
+        private CheckBox CHK_Wrap80;
+        private ToolTip TT_Search;
     }
 }

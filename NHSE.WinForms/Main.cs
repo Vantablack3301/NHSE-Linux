@@ -11,15 +11,15 @@ namespace NHSE.WinForms
     /// <summary>
     /// Simple launcher for opening a save file.
     /// </summary>
-    public partial class Main : Form
+    public partial class MainForm : Form
     {
         public const string BackupFolderName = "bak";
         public const string ItemFolderName = "items";
-        public static readonly string WorkingDirectory = Application.StartupPath;
+        public static readonly string WorkingDirectory = AppDomain.CurrentDomain.BaseDirectory;
         public static readonly string BackupPath = Path.Combine(WorkingDirectory, BackupFolderName);
         public static readonly string ItemPath = Path.Combine(WorkingDirectory, ItemFolderName);
 
-        public Main()
+        public MainForm()
         {
             InitializeComponent();
 
@@ -39,7 +39,7 @@ namespace NHSE.WinForms
             bool sized = file.ValidateSizes();
             if (!sized)
             {
-                var prompt = WinFormsUtil.Prompt(MessageBoxButtons.YesNo, MessageStrings.MsgSaveDataSizeMismatch, MessageStrings.MsgAskContinue);
+                var prompt = MessageBox.Show(MessageStrings.MsgSaveDataSizeMismatch + "\n" + MessageStrings.MsgAskContinue, MessageBoxButtons.YesNo);
                 if (prompt != DialogResult.Yes)
                     return;
             }
@@ -47,17 +47,17 @@ namespace NHSE.WinForms
             new Editor(file).Show();
         }
 
-        private void Main_DragEnter(object sender, DragEventArgs e)
+        private void MainForm_DragEnter(object sender, DragEventArgs e)
         {
-            if (e.AllowedEffect == (DragDropEffects.Copy | DragDropEffects.Link)) // external file
+            if (e.Data.GetDataPresent(DataFormats.FileDrop)) // external file
                 e.Effect = DragDropEffects.Copy;
             else if (e.Data != null) // within
                 e.Effect = DragDropEffects.Move;
         }
 
-        private void Main_DragDrop(object sender, DragEventArgs e)
+        private void MainForm_DragDrop(object sender, DragEventArgs e)
         {
-            var files = (string[]?)e.Data?.GetData(DataFormats.FileDrop);
+            var files = (string[])e.Data.GetData(DataFormats.FileDrop);
             if (files == null || files.Length == 0)
                 return;
             Open(files[0]);
@@ -101,7 +101,7 @@ namespace NHSE.WinForms
             #if !DEBUG
             catch (Exception ex)
             {
-                WinFormsUtil.Error(ex.Message);
+                MessageBox.Show(ex.Message);
             }
             #endif
         }
@@ -117,7 +117,7 @@ namespace NHSE.WinForms
             var dir = Path.GetDirectoryName(path);
             if (dir is null || !Directory.Exists(dir)) // ya never know
             {
-                WinFormsUtil.Error(MessageStrings.MsgSaveDataImportFail, MessageStrings.MsgSaveDataImportSuggest);
+                MessageBox.Show(MessageStrings.MsgSaveDataImportFail + "\n" + MessageStrings.MsgSaveDataImportSuggest);
                 return;
             }
 
@@ -137,7 +137,7 @@ namespace NHSE.WinForms
                 settings.BackupPrompted = true;
                 var line1 = string.Format(MessageStrings.MsgBackupCreateLocation, BackupFolderName);
                 var line2 = MessageStrings.MsgBackupCreateQuestion;
-                var prompt = WinFormsUtil.Prompt(MessageBoxButtons.YesNo, line1, line2);
+                var prompt = MessageBox.Show(line1 + "\n" + line2, MessageBoxButtons.YesNo);
                 settings.AutomaticBackup = prompt == DialogResult.Yes;
             }
 
@@ -155,7 +155,7 @@ namespace NHSE.WinForms
                 FileUtil.CopyFolder(path, dest);
         }
 
-        private void Main_KeyDown(object sender, KeyEventArgs e)
+        private void MainForm_KeyDown(object sender, KeyEventArgs e)
         {
             if (ModifierKeys != Keys.Control)
             {
@@ -197,5 +197,29 @@ namespace NHSE.WinForms
                 }
             }
         }
+
+        private void InitializeComponent()
+        {
+            this.B_Open = new Button();
+            this.SuspendLayout();
+            // 
+            // B_Open
+            // 
+            this.B_Open.Text = "Open main.dat\n\nOr...\n\nDrag&&Drop folder here!";
+            this.B_Open.Click += new EventHandler(this.Menu_Open);
+            // 
+            // MainForm
+            // 
+            this.AllowDrop = true;
+            this.ClientSize = new Size(306, 121);
+            this.Content = this.B_Open;
+            this.Title = "NHSE";
+            this.DragDrop += new DragEventHandler(this.MainForm_DragDrop);
+            this.DragEnter += new DragEventHandler(this.MainForm_DragEnter);
+            this.KeyDown += new KeyEventHandler(this.MainForm_KeyDown);
+            this.ResumeLayout(false);
+        }
+
+        private Button B_Open;
     }
 }
