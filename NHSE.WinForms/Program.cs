@@ -1,5 +1,5 @@
 using System;
-using System.Windows.Forms;
+using Eto.Forms;
 
 namespace NHSE.WinForms
 {
@@ -11,12 +11,7 @@ namespace NHSE.WinForms
         [STAThread]
         private static void Main()
         {
-#if NETCOREAPP
-            Application.SetHighDpiMode(HighDpiMode.SystemAware);
-#endif
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Main());
+            new Application(Eto.Platform.Detect).Run(new MainForm());
         }
     }
 }

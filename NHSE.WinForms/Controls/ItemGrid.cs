@@ -1,19 +1,19 @@
-﻿using System.Collections.Generic;
-using System.Drawing;
+using System.Collections.Generic;
 using System.Diagnostics;
-using System.Windows.Forms;
+using Eto.Drawing;
+using Eto.Forms;
 using NHSE.Core;
 
 namespace NHSE.WinForms
 {
-    public partial class ItemGrid : UserControl
+    public partial class ItemGrid : Panel
     {
         public ItemGrid()
         {
             InitializeComponent();
         }
 
-        public readonly List<PictureBox> Entries = new();
+        public readonly List<ImageView> Entries = new();
         public int Slots { get; private set; }
 
         private int sizeW = 32;
@@ -32,8 +32,8 @@ namespace NHSE.WinForms
 
         private void Generate(int width, int height)
         {
-            SuspendLayout();
-            Controls.Clear();
+            var layout = new DynamicLayout();
+            layout.BeginVertical();
             Entries.Clear();
 
             int colWidth = sizeW;
@@ -41,37 +41,33 @@ namespace NHSE.WinForms
 
             for (int row = 0; row < height; row++)
             {
-                var y = padEdge + (row * (rowHeight + border));
+                layout.BeginHorizontal();
                 for (int column = 0; column < width; column++)
                 {
-                    var x = padEdge + (column * (colWidth + border));
-                    var pb = GetControl(sizeW, sizeH);
-                    pb.SuspendLayout();
-                    Controls.Add(pb);
-                    pb.Location = new Point(x, y);
-                    Entries.Add(pb);
+                    var iv = GetControl(sizeW, sizeH);
+                    layout.Add(iv);
+                    Entries.Add(iv);
                 }
+                layout.EndHorizontal();
             }
+            layout.EndVertical();
 
+            Content = layout;
             Width = (2 * padEdge) + border + (width * (colWidth + border)) + 2;
             Height = (2 * padEdge) + border + (height * (rowHeight + border)) + 2;
             Debug.WriteLine($"{Name} -- Width: {Width}, Height: {Height}");
-            ResumeLayout();
         }
 
-        public static PictureBox GetControl(int width, int height)
+        public static ImageView GetControl(int width, int height)
         {
-            return new InterpolatingPictureBox
+            return new ImageView
             {
-                AutoSize = false,
-                SizeMode = PictureBoxSizeMode.Zoom,
-                BackgroundImageLayout = ImageLayout.Zoom,
-                BackColor = Color.Transparent,
-                Width = width + (2 * 1),
-                Height = height + (2 * 1),
+                Size = new Size(width + (2 * 1), height + (2 * 1)),
+                BackgroundColor = Colors.Transparent,
+                ImageInterpolation = ImageInterpolation.High,
+                Border = BorderType.Line,
                 Padding = Padding.Empty,
                 Margin = Padding.Empty,
-                BorderStyle = BorderStyle.FixedSingle,
             };
         }
     }

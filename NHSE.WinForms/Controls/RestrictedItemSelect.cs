@@ -1,12 +1,12 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Windows.Forms;
+using Eto.Forms;
 using NHSE.Core;
 
 namespace NHSE.WinForms
 {
-    public partial class RestrictedItemSelect : UserControl
+    public partial class RestrictedItemSelect : Panel
     {
         private IList<ComboItem> DataSource = Array.Empty<ComboItem>();
 
@@ -14,12 +14,10 @@ namespace NHSE.WinForms
 
         public void Initialize(IList<ComboItem> items, bool canType = false)
         {
-            CB_ItemID.DisplayMember = nameof(ComboItem.Text);
-            CB_ItemID.ValueMember = nameof(ComboItem.Value);
-            CB_ItemID.DataSource = DataSource = items;
+            CB_ItemID.DataStore = DataSource = items;
 
             if (!canType)
-                CB_ItemID.DropDownStyle = ComboBoxStyle.DropDownList;
+                CB_ItemID.ReadOnly = true;
         }
 
         public ushort Value
@@ -50,5 +48,25 @@ namespace NHSE.WinForms
         {
             NUD_CustomItem.Value = WinFormsUtil.GetIndex(CB_ItemID);
         }
+
+        private void InitializeComponent()
+        {
+            CB_ItemID = new DropDown();
+            NUD_CustomItem = new NumericUpDown();
+            CHK_CustomItem = new CheckBox();
+
+            var layout = new DynamicLayout();
+            layout.BeginVertical();
+            layout.Add(CB_ItemID);
+            layout.Add(NUD_CustomItem);
+            layout.Add(CHK_CustomItem);
+            layout.EndVertical();
+
+            Content = layout;
+        }
+
+        private DropDown CB_ItemID;
+        private NumericUpDown NUD_CustomItem;
+        private CheckBox CHK_CustomItem;
     }
 }
